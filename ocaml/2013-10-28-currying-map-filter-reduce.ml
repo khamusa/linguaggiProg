@@ -95,6 +95,8 @@ let init = 0;;
 let arg x = fun y rest -> rest (op x y);;
 let stop x = x;;
 let f g = g init;;
+
+(* Questo trucco usa na strategia chiamata 'continuation'  *)
 f (arg 1) stop;;
 f (arg 1) (arg 2) (arg 3) stop;; (* e cosi via *)
 
@@ -103,21 +105,34 @@ f (arg 1) (arg 2) (arg 3) stop;; (* e cosi via *)
 	o astrarrle ulteriormente, usando i Functors *)
 
 module type OpVarADT =
-	module Name : sig
+	sig
 		type a and b and c 
 		val op: a -> b -> c
 		val init : c
 	end
 (* a, b e c sopra sono tipi ignotici, ma non generici! Non so che tipo avranno,
-	ma avranno un tipo sicuramente *)
-module VarArgs (OP : OpVarADT.OpVarADT ) =
+	ma avranno un tipo sicuramente *)]
+(* Se OpVarADT fosse in un file chiamato OpVarADT, avrei dovuto scrivere
+	OP: OpVarADT.OpVarADT *)
+module VarArgs (OP : OpVarADT ) =
 	struct
-		let arg x = fun y rest -> rest (op x y);;
+		let arg x = fun y rest -> rest (OP.op x y);;
 		let stop x = x;;
-		let f g = g init;;
+		let f g = g OP.init;;
 	end
 
-(* Controllare gli slide dove ce ne sono esempi di uso dei funtori *)
+module Sum =
+	struct
+		type a=int and b=int and c=int;;
+		let op x y = x+y;;
+		let init = 0;;
+	end
+
+module M0 = VarArgs(Sum);;
+M0.f (M0.arg 1) (M0.arg 3) M0.stop;;
+
+(* Provare a fare una cosa del genere che immagazzini gli argomenti in una lista, e poi alla fine
+	chiama l'operazione sulla lista, che cosi potra lavorare in modalità posizionale *)
 
 (* Non è ancora perfetto però. Possiamo provare a instanziare OpVarADT con ua lista generica? *)
 (* Dobbiamo fare un funtore di funtori *)
